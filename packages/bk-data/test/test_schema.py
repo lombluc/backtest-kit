@@ -1,5 +1,6 @@
-from datetime import date, datetime, timedelta, timezone
 import re
+from datetime import date, datetime, timedelta, timezone
+from typing import Any
 
 import pytest
 from bk_data.exceptions import BarValidationError, DateParseError
@@ -20,7 +21,7 @@ df0 = DataFrame(
 
 
 @pytest.fixture
-def base_dict():
+def base_dict() -> dict[str, list[Any]]:
     return {
         "date": [date(2026, 9, 28)],
         "symbol": ["I'm great"],
@@ -32,7 +33,7 @@ def base_dict():
     }
 
 
-def test_validate_bars_orders():
+def test_validate_bars_orders() -> None:
     tab = validate_bars(df0)
     assert tab["date"].to_pylist() == [date(2026, 9, 27), date(2026, 9, 28)]
 
@@ -49,7 +50,9 @@ def test_validate_bars_orders():
         ("volume", "1000.0", "Conversion failed"),
     ],
 )
-def test_invalid_types(base_dict, k: str, val, err: str):
+def test_invalid_types(
+    base_dict: dict[str, list[Any]], k: str, val: str | int, err: str
+) -> None:
     base_dict[k] = [val]
     df = DataFrame(base_dict)
     with pytest.raises(BarValidationError, match=err):
@@ -60,7 +63,7 @@ def test_invalid_types(base_dict, k: str, val, err: str):
     "k",
     [("date"), ("symbol"), ("open"), ("high"), ("low"), ("close"), ("volume")],
 )
-def test_not_null_keys(base_dict, k: str):
+def test_not_null_keys(base_dict: dict[str, list[Any]], k: str) -> None:
     base_dict[k] = [None]
     df = DataFrame(base_dict)
 
@@ -68,7 +71,7 @@ def test_not_null_keys(base_dict, k: str):
         validate_bars(df)
 
 
-def test_no_repeating_keys():
+def test_no_repeating_keys() -> None:
     df = DataFrame(
         {
             "date": [date(2026, 9, 28), date(2026, 9, 28)],
@@ -89,7 +92,7 @@ def test_no_repeating_keys():
     "k",
     [("open"), ("low")],
 )
-def test_prices_zero(base_dict, k: str):
+def test_prices_zero(base_dict: dict[str, list[Any]], k: str) -> None:
     base_dict[k] = [0]
     df = DataFrame(base_dict)
 
@@ -98,7 +101,7 @@ def test_prices_zero(base_dict, k: str):
 
 
 @pytest.mark.parametrize("k", ["high", "close"])
-def test_prices_zero_named_rule(base_dict, k: str):
+def test_prices_zero_named_rule(base_dict: dict[str, list[Any]], k: str) -> None:
     base_dict[k] = [0.0]
     if k == "high":
         base_dict["low"] = [0.0]
@@ -110,7 +113,7 @@ def test_prices_zero_named_rule(base_dict, k: str):
 
 @pytest.mark.parametrize("k", ["open", "high", "low", "close"])
 @pytest.mark.parametrize("val", [float("inf"), float("-inf")])
-def test_prices_not_finite(base_dict, k: str, val: float):
+def test_prices_not_finite(base_dict: dict[str, list[Any]], k: str, val: float) -> None:
     base_dict[k] = [val]
     df = DataFrame(base_dict)
     with pytest.raises(BarValidationError, match=f"{k} is finite: 1 rows"):
@@ -121,7 +124,7 @@ def test_prices_not_finite(base_dict, k: str, val: float):
     "k",
     [("open"), ("low"), ("volume")],
 )
-def test_negative(base_dict, k: str):
+def test_negative(base_dict: dict[str, list[Any]], k: str) -> None:
     base_dict[k] = [-1]
     df = DataFrame(base_dict)
     with pytest.raises(
@@ -130,7 +133,7 @@ def test_negative(base_dict, k: str):
         validate_bars(df)
 
 
-def test_prices_equal():
+def test_prices_equal() -> None:
     dic = {
         "date": [date(2026, 9, 28)],
         "symbol": ["I'm great"],
@@ -144,7 +147,7 @@ def test_prices_equal():
     validate_bars(df)
 
 
-def test_high_less_than_low():
+def test_high_less_than_low() -> None:
     dic = {
         "date": [date(2026, 9, 28)],
         "symbol": ["I'm great"],
@@ -163,7 +166,7 @@ def test_high_less_than_low():
     "k",
     [("open"), ("close")],
 )
-def test_high_less_than_open_close(k: str):
+def test_high_less_than_open_close(k: str) -> None:
     dic = {
         "date": [date(2026, 9, 28)],
         "symbol": ["I'm great"],
@@ -183,7 +186,7 @@ def test_high_less_than_open_close(k: str):
     "k",
     [("open"), ("close")],
 )
-def test_low_more_than_open_close(k: str):
+def test_low_more_than_open_close(k: str) -> None:
     dic = {
         "date": [date(2026, 9, 28)],
         "symbol": ["I'm great"],
@@ -199,14 +202,14 @@ def test_low_more_than_open_close(k: str):
         validate_bars(df)
 
 
-def test_datetime(base_dict):
+def test_datetime(base_dict: dict[str, list[Any]]) -> None:
     base_dict["date"] = [datetime(2026, 9, 28, 12, 1, 1)]
     df = DataFrame(base_dict)
     with pytest.raises(BarValidationError, match="1 date values have a time component"):
         validate_bars(df)
 
 
-def test_date_with_timezone(base_dict):
+def test_date_with_timezone(base_dict: dict[str, list[Any]]) -> None:
     base_dict["date"] = [datetime(2026, 9, 28, tzinfo=timezone(timedelta(hours=5)))]
     df = DataFrame(base_dict)
     with pytest.raises(BarValidationError, match="date column is timezone-aware"):
@@ -220,14 +223,16 @@ def test_date_with_timezone(base_dict):
         (Timestamp("2026-09-28 04:00", tz="UTC"), "America/New_York"),
     ],
 )
-def test_date_with_timezone_and_tz(base_dict, ts: Timestamp, tz: str):
+def test_date_with_timezone_and_tz(
+    base_dict: dict[str, list[Any]], ts: Timestamp, tz: str
+) -> None:
     base_dict["date"] = [ts]
     df = DataFrame(base_dict)
     tab = validate_bars(df, tz=tz)
     assert tab["date"].to_pylist() == [date(2026, 9, 28)]
 
 
-def test_iso_date_string_accepted(base_dict):
+def test_iso_date_string_accepted(base_dict: dict[str, list[Any]]) -> None:
     base_dict["date"] = ["2026-09-28"]
     df = DataFrame(base_dict)
     tab = validate_bars(df)
@@ -235,28 +240,30 @@ def test_iso_date_string_accepted(base_dict):
 
 
 @pytest.mark.parametrize("val", ["09/10/2026", "28/09/2026", "Sep 28 2026"])
-def test_non_iso_date_string_rejected(base_dict, val: str):
+def test_non_iso_date_string_rejected(
+    base_dict: dict[str, list[Any]], val: str
+) -> None:
     base_dict["date"] = [val]
     df = DataFrame(base_dict)
     with pytest.raises(DateParseError, match="could not be parsed"):
         validate_bars(df)
 
 
-def test_duplicated_columns(base_dict):
+def test_duplicated_columns(base_dict: dict[str, list[Any]]) -> None:
     df = DataFrame(base_dict)
     df = concat([df, df[["volume"]]], axis=1)
     with pytest.raises(BarValidationError, match="duplicated columns:"):
         validate_bars(df)
 
 
-def test_missing_columns(base_dict):
+def test_missing_columns(base_dict: dict[str, list[Any]]) -> None:
     del base_dict["volume"]
     df = DataFrame(base_dict)
     with pytest.raises(BarValidationError, match="missing columns:"):
         validate_bars(df)
 
 
-def test_extra_columns(base_dict):
+def test_extra_columns(base_dict: dict[str, list[Any]]) -> None:
     base_dict["extra"] = ["hello there"]
     df = DataFrame(base_dict)
     with pytest.raises(BarValidationError, match="unexpected columns:"):

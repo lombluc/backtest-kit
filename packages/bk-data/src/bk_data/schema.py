@@ -46,10 +46,6 @@ def validate_bars(df: pd.DataFrame, tz: str | None = None) -> pa.Table:
         raise BarValidationError(f"could not convert bars to Arrow: {err}") from err
 
     keys = ["date", "symbol"]
-    # for k in keys:
-    #     n_null = table[k].null_count
-    #     if n_null:
-    #         raise BarValidationError(f"column {k!r} has {n_null} null/NaN values")
 
     counts = table.group_by(keys).aggregate([([], "count_all")])
     if counts.num_rows != table.num_rows:

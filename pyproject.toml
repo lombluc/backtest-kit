@@ -10,6 +10,10 @@ dev = [
     "ruff>=0.16.9",
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+addopts = "--import-mode=importlib"
+
 [tool.ruff]
 line-length = 88
 target-version = "py314"
@@ -25,3 +29,7 @@ quote-style = "double"
 python_version = "3.14"
 strict = true
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["exchange_calendars.*"]
+ignore_missing_imports = true
